@@ -12,7 +12,8 @@
 44キーパッドからの入力をArduinoが受け取れる形に変換していると思う。[こちら](https://synapse.kyoto/lib/ResKeypad/page001.html#index5)から導入できる。
 
 **MaxMatrix2**
-88LEDマトリクスを光らせるためのライブラリ。
+88LEDマトリクスを光らせるためのライブラリ。  
+[moodle記事](https://moodle.cis.kit.ac.jp/mod/book/view.php?id=206604) を参考にする 
 
 ## 回路
 今回の回路は非常にシンプル。44キーパッドは、VCCとGNDをメインボードに繋ぎ、**OUTPUTをA4ピンに接続**。  
