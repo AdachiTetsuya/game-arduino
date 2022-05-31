@@ -37,8 +37,9 @@ MaxMatrix2 LedMatrix( DATA_PIN, LOAD_PIN, CLOCK_PIN, NCELL, Address );
 //-----------------------------------------------------------------------------
 MatrixString MyString( MyFont, NCELL, MaxMatrix2::NROW, Address, NCELL );
 
-const char* Message1 = "GAME";
-const char* Message2 = "END";
+const char* Message_GAME = "GAME";
+const char* Message_WIN = "WIN";
+const char* Message_LOSE = "LOSE";
 //-----------------------------------------------------------------------------
 // 自作関数
 //-----------------------------------------------------------------------------
@@ -146,12 +147,19 @@ int enemy_x = 24, enemy_y = 2;
 
 // 敵の移動間隔
 int enemy_speed = 30;
-
 // 敵の速度調整用のカウンター
 int enemy_counter = enemy_speed;
 
 // プレイヤーが敵に捕まったかどうか (0→まだ捕まってない,1→捕まった)
-int game_flag = 0;
+int catched_flag = 0;
+
+// どの画面を表示するか
+int scene = 0;
+
+// 制限時間
+const int GameTime = 500;
+// 時間のカウンター
+int time_counter = GameTime;
 
 //-----------------------------------------------------------------------------
 void setup()
@@ -160,97 +168,155 @@ void setup()
   while (!Serial);                  // 準備が終わるのを待つ
   Serial.println("start");    // シリアル通信でメッセージをPCに送信
 
-  MyString.set( Message1, MatrixString::FILL );
-  LedMatrix.clear();
-  delay( 1000 );
-  LedMatrix.show();
-  delay( 3000 );
-  LedMatrix.clear();
+  
 }
 //-----------------------------------------------------------------------------
 void loop()
 {
-  // バッファの初期化
-  buffer_all_clear();
 
-  // プレイヤーの座標変更
-  signed char key;
-  key=keypad.GetKey();  // key=11:ボタン4,key=10:ボタン5,key=9:ボタン6,key=8:ボタン7に対応
-  switch (key)
-  {
-    case 11:  // 左
-      if (player_x > 0){
-        player_x -= 1;
-      }
-      break;  
-
-    case 10:  // 上
-      if (player_y > 0){
-        player_y -= 1;
-      }
-      break;
-    
-    case 9:  // 下
-      if(player_y < 7){
-        player_y += 1;
-      }
-      break;
-
-    case 8:  // 左
-      if(player_x < 31){
-        player_x += 1;
-      }
-      break;
+  // 2.1 - ゲーム前
+  if(scene == 0){
+    MyString.set( Message_GAME, MatrixString::FILL );
+    LedMatrix.show();
+    delay( 2000 );
+    LedMatrix.clear();
+    scene = 1;
   }
 
-  //プレイヤーの描画
-  drawPixel(player_x,player_y);
+  // 2.2 - ゲーム中
+  if(scene == 1){
 
-  enemy_counter -= 1;
-  if(enemy_counter <= 0){
-    // 敵の座標変更
-    int direction = decideDirection(player_x,player_y,enemy_x,enemy_y);
-    switch (direction)
+    // バッファの初期化
+    buffer_all_clear();
+
+    // 時間を減らす
+    time_counter -= 1;
+
+    // プレイヤーの座標変更
+    signed char key;
+    key=keypad.GetKey();  // key=11:ボタン4,key=10:ボタン5,key=9:ボタン6,key=8:ボタン7に対応
+    switch (key)
     {
-      case 0:  // 右
-        if (enemy_x < 31){
-          enemy_x += 1;
+      case 11:  // 左
+        if (player_x > 0){
+          player_x -= 1;
         }
         break;  
 
-      case 1:  // 下
-        if (enemy_y < 7){
-          enemy_y += 1;
+      case 10:  // 上
+        if (player_y > 0){
+          player_y -= 1;
         }
         break;
       
-      case 2:  // 左
-        if(enemy_x > 0){
-          enemy_x -= 1;
+      case 9:  // 下
+        if(player_y < 7){
+          player_y += 1;
         }
         break;
 
-      case 3:  // 上
-        if(enemy_y > 0){
-          enemy_y -= 1;
+      case 8:  // 右
+        if(player_x < 31){
+          player_x += 1;
         }
         break;
     }
-      enemy_counter = enemy_speed;
+
+    //プレイヤーの描画
+    drawPixel(player_x,player_y);
+
+    enemy_counter -= 1;
+    if(enemy_counter <= 0){
+      // 敵の座標変更
+      int direction = decideDirection(player_x,player_y,enemy_x,enemy_y);
+      switch (direction)
+      {
+        case 0:  // 右
+          if (enemy_x < 31){
+            enemy_x += 1;
+          }
+          break;  
+
+        case 1:  // 下
+          if (enemy_y < 7){
+            enemy_y += 1;
+          }
+          break;
+        
+        case 2:  // 左
+          if(enemy_x > 0){
+            enemy_x -= 1;
+          }
+          break;
+
+        case 3:  // 上
+          if(enemy_y > 0){
+            enemy_y -= 1;
+          }
+          break;
+      }
+        enemy_counter = enemy_speed;
+    }
+
+    //敵の描画
+    drawPixel(enemy_x,enemy_y);
+
+    // 捕まったかどうか
+    catched_flag = is_catched(player_x,player_y,enemy_x,enemy_y,catched_flag);
+    if(catched_flag){
+      scene = 2;
+    }
+
+    // 制限時間が 0 かどうか
+    if (time_counter < 0){
+      scene = 2;
+    }
+
   }
 
-  //敵の描画
-  drawPixel(enemy_x,enemy_y);
+  // 2.3 - ゲーム終了
+  if(scene == 2){
+    if(catched_flag){
+      // 敵に捕まって終わった場合
+      MyString.set( Message_LOSE, MatrixString::FILL );
+      LedMatrix.show();
+      delay( 1000 );
+      signed char key;
+      key=keypad.GetKey();  // key=8(Bボタン)でレベル1からリプレイ
+      if(key==8){
+        // 各変数の初期化
+        time_counter = GameTime;
+        catched_flag = 0;
+        player_x = 20, player_y = 4;
+        enemy_x = 24, enemy_y = 2;
+        enemy_speed = 30;
+        enemy_counter = enemy_speed;
 
-  // 捕まったかどうか
-  int is_end = is_catched(player_x,player_y,enemy_x,enemy_y,game_flag);
-  if(is_end == 1){
-    MyString.set( Message2, MatrixString::FILL );
+        scene = 0;
+      }
+
+    }else{
+      // 敵に捕まらずに終わった場合
+      MyString.set( Message_WIN, MatrixString::FILL );
+      LedMatrix.show();
+      delay( 1000 );
+      signed char key;
+      key=keypad.GetKey();  // key=8(Bボタン)で次のレベルへリプレイ
+      if(key==8){
+        // 各変数の初期化
+        // 各変数の初期化
+        time_counter = GameTime;
+        catched_flag = 0;
+        player_x = 20, player_y = 4;
+        enemy_x = 24, enemy_y = 2;
+        enemy_speed -= 5;
+        enemy_counter = enemy_speed;
+
+        scene = 0;
+      }
+    }
   }
-  
   LedMatrix.show();
-
-
 
   delay( 30 );
   
