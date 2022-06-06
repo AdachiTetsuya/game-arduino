@@ -146,7 +146,7 @@ int player_x = 20, player_y = 4;
 int enemy_x = 24, enemy_y = 2;
 
 // 敵の移動間隔
-int enemy_speed = 30;
+int enemy_speed = 22;
 // 敵の速度調整用のカウンター
 int enemy_counter = enemy_speed;
 
@@ -157,7 +157,7 @@ int catched_flag = 0;
 int scene = 0;
 
 // 制限時間
-const int GameTime = 500;
+const int GameTime = 450;
 // 時間のカウンター
 int time_counter = GameTime;
 
@@ -288,7 +288,7 @@ void loop()
         time_counter = GameTime;
         catched_flag = 0;
         player_x = 20, player_y = 4;
-        enemy_x = 24, enemy_y = 2;
+        enemy_x = random(0, 32), enemy_y = random(0, 8);
         enemy_speed = 30;
         enemy_counter = enemy_speed;
 
@@ -308,7 +308,7 @@ void loop()
         time_counter = GameTime;
         catched_flag = 0;
         player_x = 20, player_y = 4;
-        enemy_x = 24, enemy_y = 2;
+        enemy_x = random(0, 32), enemy_y = random(0, 8);
         enemy_speed -= 5;
         enemy_counter = enemy_speed;
 
